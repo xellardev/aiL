@@ -6,7 +6,7 @@
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     nav button { margin-right: 10px; padding: 5px 10px; cursor: pointer; }
-    #content { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+    #content { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -21,41 +21,40 @@
   <div id="content">Загрузка...</div>
 
   <script>
-    // Сопоставление URL -> файл
     const routes = {
       'Home': 'home.html',
       'Docs': 'docs.html',
-      'loader.v1': 'loader-v1.html',
-      'loader.v2': 'loader-v2.html'
+      'loader.v1': 'scripts/loader-v1.js',
+      'loader.v2': 'scripts/loader-v2.js'
     };
 
     function navigate(page) {
-      // Меняем URL в браузере без перезагрузки
       window.history.pushState({}, '', page);
       loadContent(page);
     }
 
     function loadContent(page) {
-      const file = routes[page] || 'home.html';
-      fetch(file)
-        .then(r => r.text())
-        .then(html => {
-          document.getElementById('content').innerHTML = html;
-        })
-        .catch(() => {
-          document.getElementById('content').innerHTML = 'Страница не найдена';
+      const path = routes[page];
+      if(!path) return;
+
+      if(page.startsWith('loader')) {
+        document.getElementById('content').innerHTML = 'Загрузка Lua скрипта...';
+        fetch(path).then(r => r.text()).then(jsCode => {
+          eval(jsCode); // выполняем JS, который подгружает Lua с GitHub
         });
+      } else {
+        fetch(path).then(r => r.text()).then(html => {
+          document.getElementById('content').innerHTML = html;
+        });
+      }
     }
 
-    // Подгружаем контент при заходе на страницу или при навигации назад/вперед
     window.addEventListener('popstate', () => {
       const path = window.location.pathname.split('/').pop();
       loadContent(path || 'Home');
     });
 
-    // Загружаем контент при первой загрузке
-    const initial = window.location.pathname.split('/').pop() || 'Home';
-    loadContent(initial);
+    loadContent(window.location.pathname.split('/').pop() || 'Home');
   </script>
 </body>
 </html>
